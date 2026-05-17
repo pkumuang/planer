@@ -86,8 +86,8 @@ body {
 
 /* ── iPad Landscape (1024px+) ── */
 @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
-  .left-panel   { width: 40%; padding: 10px; box-sizing: border-box; flex-shrink: 0; overflow-x: hidden; }
-  .middle-panel { width: 28%; flex-shrink: 0; }
+  .left-panel   { width: 38%; padding: 10px; box-sizing: border-box; flex-shrink: 0; overflow-x: hidden; }
+  .middle-panel { width: 20%; flex-shrink: 0; }
   .right-panel  { flex: 1; min-width: 0; }
 
   /* ทำให้ grid calendar fit พอดีใน left-panel */
@@ -174,9 +174,20 @@ body {
   border: 1px solid var(--border);
   text-align: center;
   cursor: pointer;
+  position: relative;
 }
 .day.has-task {
-  background: #e6f7ff;
+  background: none;
+}
+.day.has-task::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  background: #f5c400;
+  border-radius: 50%;
 }
 .day.today {
   border: 2px solid #4da3ff;
@@ -644,6 +655,7 @@ function deleteOneTask() {
   deleteTargetIndex = null;
 
   save();
+  loadCalendar();
   document.getElementById("confirmPopup").style.display = "none";
   openTaskList(selectedDate);
 }
@@ -744,6 +756,7 @@ function savePopupTask() {
   }
 
   save();
+  loadCalendar();
   closePopup();
   openTaskList(selectedDate);
 }
