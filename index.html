@@ -74,54 +74,66 @@ body {
 
 /* ── iPad (768px - 1024px) ── */
 @media (max-width: 1024px) {
-  .left-panel   { width: 30%; }
-  .middle-panel { width: 40%; }
-  .right-panel  { width: 30%; }
-  .day { padding: 6px; font-size: 13px; }
-  .header-day { font-size: 11px; padding: 3px; }
+  .left-panel   { width: 30%; padding: 10px; }
+  .middle-panel { width: 38%; }
+  .right-panel  { width: 32%; }
+
+  .left-panel .grid { gap: 2px; }
+  .left-panel .day  { padding: 4px 1px; font-size: 11px; min-width: 0; }
+  .left-panel .header-day { font-size: 10px; padding: 2px 0; }
+
+  .left-panel h2 { font-size: 14px; margin: 4px 0; }
+  .left-panel h3 { font-size: 12px; margin: 2px 0; }
+  .left-panel button { font-size: 12px; padding: 6px; }
 }
 
 /* ── iPhone / small screen (767px and below) ── */
 @media (max-width: 767px) {
   .container {
-    position: relative;
-    height: 100vh;
-    overflow: hidden;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
-  .left-panel, .middle-panel, .right-panel {
-    position: absolute;
-    top: 0; left: 0;
+  .left-panel {
     width: 100%;
-    height: 100%;
-    padding: 12px;
     box-sizing: border-box;
-    overflow-y: auto;
-    transition: transform 0.3s ease;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
+    height: auto;
+    overflow-y: visible;
+    flex-shrink: 0;
   }
 
-  .left-panel   { transform: translateX(0%);   display: flex !important; }
-  .middle-panel { transform: translateX(100%); display: block !important; }
-  .right-panel  { transform: translateX(200%); display: block !important; }
-
-  .left-panel.slide-out   { transform: translateX(-100%); }
-  .middle-panel.slide-in  { transform: translateX(0%); }
-  .middle-panel.slide-out { transform: translateX(-100%); }
-  .right-panel.slide-in   { transform: translateX(0%); }
-
-  .back-btn {
-    display: inline-block;
-    background: none;
-    border: none;
-    color: #4da3ff;
-    font-size: 16px;
-    padding: 0 0 10px 0;
-    width: auto;
-    margin: 0;
-    cursor: pointer;
+  /* ซ่อน Dark Mode button ใน left-panel บน mobile ย้ายไปด้านล่างสุด */
+  .left-panel #themeToggle {
+    margin-top: 12px;
   }
 
-  .day { padding: 10px 4px; font-size: 14px; }
+  .middle-panel {
+    width: 100%;
+    box-sizing: border-box;
+    border-right: none;
+    border-bottom: 2px solid var(--border);
+    height: auto;
+    overflow-y: visible;
+    flex-shrink: 0;
+  }
+
+  .right-panel {
+    width: 100%;
+    box-sizing: border-box;
+    border-right: none;
+    height: auto;
+    overflow-y: visible;
+    flex-shrink: 0;
+  }
+
+  /* ซ่อน back button บน mobile แบบใหม่ (ไม่จำเป็นแล้ว) */
+  .back-btn { display: none !important; }
+
+  .day { padding: 8px 2px; font-size: 14px; }
   .header-day { font-size: 12px; }
   .grid { gap: 3px; }
   button { font-size: 15px; padding: 12px; }
@@ -474,20 +486,19 @@ function openTaskList(dateStr) {
     }
   });
 
-  const isMobile = window.innerWidth <= 767;
-  if (isMobile) {
-    document.querySelector(".left-panel").classList.add("slide-out");
-    document.getElementById("taskListPanel").classList.add("slide-in");
-    document.getElementById("taskListPanel").classList.remove("slide-out");
-    document.getElementById("taskDetailPanel").classList.remove("slide-in");
-  } else {
-    document.getElementById("taskListPanel").style.display = "block";
-    document.getElementById("taskDetailPanel").style.display = "none";
-  }
+  document.getElementById("taskListPanel").style.display = "block";
+  document.getElementById("taskDetailPanel").style.display = "none";
 
   document.getElementById("taskListDate").innerText = dateStr;
   updateSummaryBox();
   renderTaskList();
+
+  // Mobile: scroll down to task list
+  if (window.innerWidth <= 767) {
+    setTimeout(() => {
+      document.getElementById("taskListPanel").scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
 }
 
 /* MOBILE BACK NAVIGATION */
@@ -618,14 +629,7 @@ function openTaskDetail(index) {
   selectedTaskIndex = index;
   const t = tasks[selectedDate][index];
 
-  const isMobile = window.innerWidth <= 767;
-  if (isMobile) {
-    document.getElementById("taskListPanel").classList.add("slide-out");
-    document.getElementById("taskListPanel").classList.remove("slide-in");
-    document.getElementById("taskDetailPanel").classList.add("slide-in");
-  } else {
-    document.getElementById("taskDetailPanel").style.display = "block";
-  }
+  document.getElementById("taskDetailPanel").style.display = "block";
 
   document.getElementById("taskDetail").innerHTML = `
     <h3>${t.title}</h3>
@@ -635,6 +639,13 @@ function openTaskDetail(index) {
     <p><strong>ทำงานร่วมกับ:</strong> ${t.partner}</p>
     <p><strong>รายละเอียด:</strong><br>${t.detail}</p>
   `;
+
+  // Mobile: scroll down to detail panel
+  if (window.innerWidth <= 767) {
+    setTimeout(() => {
+      document.getElementById("taskDetailPanel").scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
 }
 
 /* POPUP ADD */
