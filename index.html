@@ -53,10 +53,18 @@ body {
   border-right: 2px solid var(--border);
   padding: 15px;
   background: var(--panel);
-  overflow-y: auto;
+  overflow: hidden;
   display: none;
   flex-shrink: 0;
-  max-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
+  flex-direction: column;
+}
+
+#taskList {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .right-panel {
@@ -559,7 +567,7 @@ function openTaskList(dateStr) {
     }
   });
 
-  document.getElementById("taskListPanel").style.display = "block";
+  document.getElementById("taskListPanel").style.display = "flex";
   document.getElementById("taskDetailPanel").style.display = "none";
 
   document.getElementById("taskListDate").innerText = dateStr;
