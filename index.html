@@ -34,6 +34,7 @@ body {
 .container {
   display: flex;
   height: 100vh;
+  overflow: hidden;
 }
 
 .left-panel {
@@ -44,6 +45,7 @@ body {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .middle-panel {
@@ -53,6 +55,7 @@ body {
   background: var(--panel);
   overflow-y: auto;
   display: none;
+  flex-shrink: 0;
 }
 
 .right-panel {
@@ -61,6 +64,67 @@ body {
   background: var(--panel);
   overflow-y: auto;
   display: none;
+  flex-shrink: 0;
+}
+
+/* Back button (mobile only) */
+.back-btn {
+  display: none;
+}
+
+/* ── iPad (768px - 1024px) ── */
+@media (max-width: 1024px) {
+  .left-panel   { width: 30%; }
+  .middle-panel { width: 40%; }
+  .right-panel  { width: 30%; }
+  .day { padding: 6px; font-size: 13px; }
+  .header-day { font-size: 11px; padding: 3px; }
+}
+
+/* ── iPhone / small screen (767px and below) ── */
+@media (max-width: 767px) {
+  .container {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .left-panel, .middle-panel, .right-panel {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+  }
+
+  .left-panel   { transform: translateX(0%);   display: flex !important; }
+  .middle-panel { transform: translateX(100%); display: block !important; }
+  .right-panel  { transform: translateX(200%); display: block !important; }
+
+  .left-panel.slide-out   { transform: translateX(-100%); }
+  .middle-panel.slide-in  { transform: translateX(0%); }
+  .middle-panel.slide-out { transform: translateX(-100%); }
+  .right-panel.slide-in   { transform: translateX(0%); }
+
+  .back-btn {
+    display: inline-block;
+    background: none;
+    border: none;
+    color: #4da3ff;
+    font-size: 16px;
+    padding: 0 0 10px 0;
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .day { padding: 10px 4px; font-size: 14px; }
+  .header-day { font-size: 12px; }
+  .grid { gap: 3px; }
+  button { font-size: 15px; padding: 12px; }
 }
 
 /* Calendar */
@@ -187,6 +251,7 @@ button {
 
   <!-- MIDDLE PANEL -->
   <div class="middle-panel" id="taskListPanel">
+    <button class="back-btn" onclick="goBackToCalendar()">◀ ปฏิทิน</button>
     <h2 id="taskListDate"></h2>
 
     <!-- รายละเอียดงานทั้งหมด -->
@@ -202,6 +267,7 @@ button {
 
   <!-- RIGHT PANEL -->
   <div class="right-panel" id="taskDetailPanel">
+    <button class="back-btn" onclick="goBackToTaskList()">◀ รายการงาน</button>
     <h2>รายละเอียดงาน</h2>
     <div id="taskDetail"></div>
   </div>
@@ -408,13 +474,36 @@ function openTaskList(dateStr) {
     }
   });
 
-  document.getElementById("taskListPanel").style.display = "block";
-  document.getElementById("taskDetailPanel").style.display = "none";
+  const isMobile = window.innerWidth <= 767;
+  if (isMobile) {
+    document.querySelector(".left-panel").classList.add("slide-out");
+    document.getElementById("taskListPanel").classList.add("slide-in");
+    document.getElementById("taskListPanel").classList.remove("slide-out");
+    document.getElementById("taskDetailPanel").classList.remove("slide-in");
+  } else {
+    document.getElementById("taskListPanel").style.display = "block";
+    document.getElementById("taskDetailPanel").style.display = "none";
+  }
 
   document.getElementById("taskListDate").innerText = dateStr;
-
   updateSummaryBox();
   renderTaskList();
+}
+
+/* MOBILE BACK NAVIGATION */
+function goBackToCalendar() {
+  document.querySelector(".left-panel").classList.remove("slide-out");
+  document.getElementById("taskListPanel").classList.remove("slide-in");
+  document.getElementById("taskListPanel").classList.add("slide-out");
+  setTimeout(() => {
+    document.getElementById("taskListPanel").classList.remove("slide-out");
+  }, 300);
+}
+
+function goBackToTaskList() {
+  document.getElementById("taskDetailPanel").classList.remove("slide-in");
+  document.getElementById("taskListPanel").classList.add("slide-in");
+  document.getElementById("taskListPanel").classList.remove("slide-out");
 }
 
 /* SUMMARY BOX */
@@ -527,10 +616,16 @@ function deleteOneTask() {
 /* OPEN DETAIL */
 function openTaskDetail(index) {
   selectedTaskIndex = index;
-
   const t = tasks[selectedDate][index];
 
-  document.getElementById("taskDetailPanel").style.display = "block";
+  const isMobile = window.innerWidth <= 767;
+  if (isMobile) {
+    document.getElementById("taskListPanel").classList.add("slide-out");
+    document.getElementById("taskListPanel").classList.remove("slide-in");
+    document.getElementById("taskDetailPanel").classList.add("slide-in");
+  } else {
+    document.getElementById("taskDetailPanel").style.display = "block";
+  }
 
   document.getElementById("taskDetail").innerHTML = `
     <h3>${t.title}</h3>
