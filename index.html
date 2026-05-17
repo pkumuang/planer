@@ -72,19 +72,43 @@ body {
   display: none;
 }
 
-/* ── iPad (768px - 1024px) ── */
-@media (max-width: 1024px) {
-  .left-panel   { width: 40%; padding: 10px; }
-  .middle-panel { width: 25%; }
-  .right-panel  { width: 35%; }
+/* ── iPad Portrait (768px - 1024px) ── */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .container { flex-direction: column; height: auto; min-height: 100vh; }
 
-  .left-panel .grid { gap: 2px; }
-  .left-panel .day  { padding: 4px 1px; font-size: 11px; min-width: 0; }
+  .left-panel   { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 2px solid var(--border); height: auto; padding: 12px; }
+  .middle-panel { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 2px solid var(--border); height: auto; }
+  .right-panel  { width: 100%; box-sizing: border-box; height: auto; }
+
+  .day { padding: 8px 2px; font-size: 13px; }
+  .header-day { font-size: 11px; }
+}
+
+/* ── iPad Landscape (1024px+) ── */
+@media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
+  .left-panel   { width: 40%; padding: 10px; box-sizing: border-box; flex-shrink: 0; overflow-x: hidden; }
+  .middle-panel { width: 28%; flex-shrink: 0; }
+  .right-panel  { flex: 1; min-width: 0; }
+
+  /* ทำให้ grid calendar fit พอดีใน left-panel */
+  .left-panel .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .left-panel .day {
+    padding: 5px 0;
+    font-size: 12px;
+    min-width: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
   .left-panel .header-day { font-size: 10px; padding: 2px 0; }
-
   .left-panel h2 { font-size: 14px; margin: 4px 0; }
   .left-panel h3 { font-size: 12px; margin: 2px 0; }
-  .left-panel button { font-size: 12px; padding: 6px; }
+  .left-panel button { font-size: 12px; padding: 6px 4px; }
 }
 
 /* ── iPhone / small screen (767px and below) ── */
