@@ -106,15 +106,19 @@ body {
     width: 100%; height: auto; overflow: visible;
     border-right: none; border-bottom: 2px solid var(--border);
     box-sizing: border-box; padding: 12px;
+    flex-shrink: 0;
   }
   .left-panel > div:first-child { overflow: visible; }
 
   .middle-panel {
     width: 100%; height: auto; overflow: visible;
     border-right: none; border-bottom: 2px solid var(--border);
-    box-sizing: border-box; display: block !important;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column;
+    flex-shrink: 0;
   }
-  #taskList { overflow: visible; flex: unset; }
+  #taskList { overflow-y: auto; max-height: 50vh; flex: unset; }
 
   .right-panel { display: none !important; }
 
@@ -139,7 +143,7 @@ body {
   }
   .left-panel > div:first-child { overflow-y: auto; flex: 1; min-height: 0; }
 
-  /* Task List — right (replaces right-panel role) */
+  /* Task List — right */
   .middle-panel {
     flex: 1; height: 100vh;
     overflow: hidden;
@@ -149,7 +153,6 @@ body {
     flex-direction: column;
   }
 
-  /* Hide original right-panel on iPad landscape */
   .right-panel { display: none !important; }
 
   .left-panel .grid { gap: 2px; width: 100%; box-sizing: border-box; }
@@ -160,23 +163,26 @@ body {
   .left-panel button { font-size: 13px; padding: 7px 4px; }
 }
 
-/* ── iPhone Portrait (max 767px) ── */
+/* ── iPhone Portrait ── */
 @media (max-width: 767px) and (orientation: portrait) {
   .container { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
 
   .left-panel {
     width: 100%; height: auto; overflow: visible;
     border-right: none; border-bottom: 2px solid var(--border);
-    box-sizing: border-box; padding: 12px;
+    box-sizing: border-box; padding: 12px; flex-shrink: 0;
   }
   .left-panel > div:first-child { overflow: visible; }
 
   .middle-panel {
     width: 100%; height: auto; overflow: visible;
     border-right: none; border-bottom: 2px solid var(--border);
-    box-sizing: border-box; display: block !important;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column;
+    flex-shrink: 0;
   }
-  #taskList { overflow: visible; flex: unset; }
+  #taskList { overflow-y: auto; max-height: 50vh; flex: unset; }
 
   .right-panel { display: none !important; }
   .back-btn { display: none !important; }
@@ -713,6 +719,14 @@ async function deleteOneTask() {
 }
 
 /* OPEN DETAIL */
+function isMobileOrTablet() {
+  // iPad/iPhone: touch device หรือ screen เล็ก
+  const isTouch = navigator.maxTouchPoints > 1;
+  const isSmall = window.innerWidth <= 1366;
+  const isNotDesktop = !/Windows NT/.test(navigator.userAgent) || isTouch;
+  return isTouch && isSmall && isNotDesktop;
+}
+
 function openTaskDetail(index) {
   selectedTaskIndex = index;
   const t = tasks[selectedDate][index];
@@ -726,10 +740,12 @@ function openTaskDetail(index) {
     <p><strong>รายละเอียด:</strong><br>${t.detail}</p>
   `;
 
-  if (window.innerWidth <= 1366 && !/Windows NT|Macintosh/.test(navigator.userAgent) || window.innerWidth <= 767) {
+  if (isMobileOrTablet()) {
+    // iPad / iPhone → popup
     document.getElementById("taskDetailPopupContent").innerHTML = detailHTML;
     document.getElementById("taskDetailPopup").style.display = "flex";
   } else {
+    // Desktop → right panel
     document.getElementById("taskDetailPanel").style.display = "flex";
     document.getElementById("taskDetail").innerHTML = detailHTML;
   }
