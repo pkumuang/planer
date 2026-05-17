@@ -447,36 +447,73 @@ button {
 </div>
 
 <script>
-let tasks = JSON.parse(localStorage.getItem("tasks") || "{}");
+const SUPABASE_URL = "https://ttxmzaceymhykctqsnyn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_vaR-wqk9uJblFRYOpigYew_94uVfOp_";
+
+// Supabase REST helper
+async function sbFetch(method, path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": method === "POST" ? "return=representation" : ""
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+
+// tasks cache: { "2026-5-17": [ {id, title, start, end, ...}, ... ] }
+let tasks = {};
 let selectedDate = null;
 let selectedTaskIndex = null;
-
 let popupMode = "add";
 let editIndex = null;
-
 let selectedForDelete = [];
-
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let selectedCalendarDay = null;
+
+/* LOAD ALL TASKS FROM SUPABASE */
+async function loadTasks() {
+  const rows = await sbFetch("GET", "tasks?select=*&order=start_time.asc");
+  tasks = {};
+  rows.forEach(r => {
+    if (!tasks[r.date]) tasks[r.date] = [];
+    tasks[r.date].push({
+      id: r.id,
+      title: r.title,
+      start: r.start_time,
+      end: r.end_time,
+      priority: r.priority,
+      category: r.category,
+      detail: r.detail,
+      partner: r.partner,
+      done: r.done
+    });
+  });
+}
 
 /* DARK MODE */
 function toggleDarkMode() {
   const body = document.body;
   const btn = document.getElementById("themeToggle");
-
   body.classList.toggle("dark");
-
   const isDark = body.classList.contains("dark");
   localStorage.setItem("darkMode", isDark);
-
   btn.innerText = isDark ? "Light Mode" : "Dark Mode";
 }
 
-window.onload = () => {
+window.onload = async () => {
   const isDark = localStorage.getItem("darkMode") === "true";
   const btn = document.getElementById("themeToggle");
-
   if (isDark) {
     document.body.classList.add("dark");
     btn.innerText = "Light Mode";
@@ -484,16 +521,18 @@ window.onload = () => {
     btn.innerText = "Dark Mode";
   }
 
-  // Auto-select today
+  try {
+    await loadTasks();
+  } catch(e) {
+    console.error("Load tasks error:", e);
+  }
+
+  loadCalendar();
+
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
   openTaskList(todayStr);
 };
-
-/* SAVE */
-function save() {
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}
 
 /* WEEK NUMBER */
 function getWeekNumber(date) {
@@ -511,14 +550,12 @@ function loadCalendar() {
 
   document.getElementById("title").innerText =
     new Date(year, month).toLocaleString("th-TH", { month: "long", year: "numeric" });
-
   document.getElementById("weekNumber").innerText =
     "Week " + getWeekNumber(new Date(year, month, 1));
 
   const header = document.getElementById("calendarHeader");
   header.innerHTML = "";
-  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  days.forEach(d => {
+  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d => {
     const div = document.createElement("div");
     div.className = "header-day";
     div.innerText = d;
@@ -527,14 +564,11 @@ function loadCalendar() {
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
 
   const offset = (firstDay + 6) % 7;
-  for (let i = 0; i < offset; i++) {
-    cal.appendChild(document.createElement("div"));
-  }
+  for (let i = 0; i < offset; i++) cal.appendChild(document.createElement("div"));
 
   const todayObj = new Date();
   const todayStr = `${todayObj.getFullYear()}-${todayObj.getMonth()+1}-${todayObj.getDate()}`;
@@ -545,16 +579,13 @@ function loadCalendar() {
     div.className = "day";
     if (tasks[dateStr]) div.classList.add("has-task");
     if (dateStr === todayStr) div.classList.add("today");
-
     div.innerText = d;
     div.dataset.date = dateStr;
     div.onclick = () => openTaskList(dateStr);
-
     if (selectedDate === dateStr) {
       div.classList.add("selected");
       selectedCalendarDay = div;
     }
-
     cal.appendChild(div);
   }
 }
@@ -562,19 +593,12 @@ function loadCalendar() {
 /* MONTH NAVIGATION */
 function prevMonth() {
   currentMonth--;
-  if (currentMonth < 0) {
-    currentMonth = 11;
-    currentYear--;
-  }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
   loadCalendar();
 }
-
 function nextMonth() {
   currentMonth++;
-  if (currentMonth > 11) {
-    currentMonth = 0;
-    currentYear++;
-  }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
   loadCalendar();
 }
 
@@ -583,12 +607,9 @@ function openTaskList(dateStr) {
   selectedDate = dateStr;
   selectedForDelete = [];
 
-  if (selectedCalendarDay) {
-    selectedCalendarDay.classList.remove("selected");
-  }
+  if (selectedCalendarDay) selectedCalendarDay.classList.remove("selected");
 
-  const days = document.querySelectorAll(".day");
-  days.forEach(d => {
+  document.querySelectorAll(".day").forEach(d => {
     if (d.dataset.date === dateStr) {
       d.classList.add("selected");
       selectedCalendarDay = d;
@@ -597,11 +618,9 @@ function openTaskList(dateStr) {
 
   document.getElementById("taskListPanel").style.display = "flex";
   document.getElementById("taskDetailPanel").style.display = "none";
-
   document.getElementById("taskListDate").innerText = dateStr;
   renderTaskList();
 
-  // Portrait mobile/tablet: scroll down to task list
   if (window.matchMedia("(orientation: portrait)").matches && window.innerWidth <= 1024) {
     setTimeout(() => {
       document.getElementById("taskListPanel").scrollIntoView({ behavior: "smooth" });
@@ -609,32 +628,13 @@ function openTaskList(dateStr) {
   }
 }
 
-/* BACK NAVIGATION (unused on new layout, kept for safety) */
 function goBackToCalendar() {}
 function goBackToTaskList() {}
-
-/* SUMMARY BOX */
-function updateSummaryBox() {
-  const list = tasks[selectedDate] || [];
-  let html = "";
-
-  list.forEach((t, i) => {
-    html += `
-      <div>
-        <strong>${t.title}</strong> (${t.start}-${t.end})  
-        <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
-      </div>
-    `;
-  });
-
-  document.getElementById("summaryContent").innerHTML = html || "ไม่มีงานในวันนี้";
-}
 
 /* RENDER TASK LIST */
 function renderTaskList() {
   const list = document.getElementById("taskList");
   list.innerHTML = "";
-
   const tasksToday = tasks[selectedDate] || [];
 
   tasksToday.forEach((t, i) => {
@@ -648,39 +648,25 @@ function renderTaskList() {
           onclick="event.stopPropagation();"
           ${isChecked ? "checked" : ""}
           style="width:18px; height:18px; cursor:pointer; flex-shrink:0; margin:0;">
-
         <strong>${t.title}</strong>
-        <span class="priority-${t.priority.toLowerCase()}">
-          (${t.priority})
-        </span>
-
-        <span style="margin-left:auto; color: var(--text); opacity:0.7; font-size:0.9em;">
-          ${t.start} - ${t.end}
-        </span>
-
+        <span class="priority-${t.priority.toLowerCase()}">(${t.priority})</span>
+        <span style="margin-left:auto; opacity:0.7; font-size:0.9em;">${t.start} - ${t.end}</span>
         <div style="display:flex; flex-direction:column; gap:4px;">
           <button onclick="editTask('${selectedDate}', ${i}); event.stopPropagation();"
-            style="width:auto; padding:4px 10px; margin:0;">
-            แก้ไข
-          </button>
+            style="width:auto; padding:4px 10px; margin:0;">แก้ไข</button>
           ${isChecked ? `
           <button onclick="confirmDeleteOne(${i}); event.stopPropagation();"
-            style="width:auto; padding:4px 10px; margin:0; background:red; color:white; border:none; cursor:pointer; border-radius:4px;">
-            ลบ
-          </button>` : ""}
+            style="width:auto; padding:4px 10px; margin:0; background:red; color:white; border:none; cursor:pointer; border-radius:4px;">ลบ</button>` : ""}
         </div>
       </div>
-      <div style="padding-left:26px; font-size:0.9em; opacity:0.8; margin-top:2px;">
-        👥 ${t.partner}
-      </div>
+      <div style="padding-left:26px; font-size:0.9em; opacity:0.8; margin-top:2px;">👥 ${t.partner}</div>
     `;
-
     div.onclick = () => openTaskDetail(i);
     list.appendChild(div);
   });
 }
 
-/* SELECT TASK FOR DELETE */
+/* SELECT FOR DELETE */
 function toggleSelect(index) {
   if (selectedForDelete.includes(index)) {
     selectedForDelete = selectedForDelete.filter(i => i !== index);
@@ -690,7 +676,7 @@ function toggleSelect(index) {
   renderTaskList();
 }
 
-/* CONFIRM DELETE ONE TASK */
+/* CONFIRM DELETE */
 let deleteTargetIndex = null;
 
 function confirmDeleteOne(index) {
@@ -700,42 +686,39 @@ function confirmDeleteOne(index) {
 
 function cancelDeletePopup() {
   deleteTargetIndex = null;
-  selectedForDelete = selectedForDelete.filter(i => i !== deleteTargetIndex);
   selectedForDelete = [];
   document.getElementById("confirmPopup").style.display = "none";
   renderTaskList();
 }
 
-function deleteOneTask() {
+async function deleteOneTask() {
   if (deleteTargetIndex === null) return;
+  const t = tasks[selectedDate][deleteTargetIndex];
 
-  tasks[selectedDate].splice(deleteTargetIndex, 1);
-  if (tasks[selectedDate].length === 0) delete tasks[selectedDate];
+  try {
+    await sbFetch("DELETE", `tasks?id=eq.${t.id}`);
+    tasks[selectedDate].splice(deleteTargetIndex, 1);
+    if (tasks[selectedDate].length === 0) delete tasks[selectedDate];
+  } catch(e) {
+    console.error("Delete error:", e);
+    alert("ลบไม่สำเร็จ: " + e.message);
+    return;
+  }
 
-  selectedForDelete = selectedForDelete.filter(i => i !== deleteTargetIndex);
+  selectedForDelete = [];
   deleteTargetIndex = null;
-
-  save();
-  loadCalendar();
   document.getElementById("confirmPopup").style.display = "none";
+  loadCalendar();
   openTaskList(selectedDate);
 }
 
 /* OPEN DETAIL */
-function isMobileOrTablet() {
-  return window.innerWidth <= 1366 && (
-    window.innerWidth <= 767 ||
-    window.matchMedia("(orientation: portrait)").matches ||
-    window.matchMedia("(orientation: landscape)").matches
-  ) && !/\bWindows\b|\bMacintosh\b/.test(navigator.userAgent);
-}
-
 function openTaskDetail(index) {
   selectedTaskIndex = index;
   const t = tasks[selectedDate][index];
 
   const detailHTML = `
-    <h3 style="margin-top: 30px;">${t.title}</h3>
+    <h3 style="margin-top:30px;">${t.title}</h3>
     <p><strong>เวลา:</strong> ${t.start} - ${t.end}</p>
     <p><strong>Priority:</strong> <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></p>
     <p><strong>หมวดหมู่:</strong> ${t.category}</p>
@@ -743,12 +726,10 @@ function openTaskDetail(index) {
     <p><strong>รายละเอียด:</strong><br>${t.detail}</p>
   `;
 
-  // Mobile / Tablet → popup
   if (window.innerWidth <= 1366 && !/Windows NT|Macintosh/.test(navigator.userAgent) || window.innerWidth <= 767) {
     document.getElementById("taskDetailPopupContent").innerHTML = detailHTML;
     document.getElementById("taskDetailPopup").style.display = "flex";
   } else {
-    // Desktop → right panel
     document.getElementById("taskDetailPanel").style.display = "flex";
     document.getElementById("taskDetail").innerHTML = detailHTML;
   }
@@ -758,13 +739,11 @@ function closeTaskDetailPopup() {
   document.getElementById("taskDetailPopup").style.display = "none";
 }
 
-/* POPUP ADD */
+/* ADD TASK FORM */
 function openAddTaskForm() {
   popupMode = "add";
   editIndex = null;
-
   document.getElementById("popupTitle").innerText = "เพิ่มงานใหม่";
-
   document.getElementById("p_title").value = "";
   document.getElementById("p_start").value = "";
   document.getElementById("p_end").value = "";
@@ -772,19 +751,15 @@ function openAddTaskForm() {
   document.getElementById("p_category").value = "";
   document.getElementById("p_detail").value = "";
   document.getElementById("p_partner").value = "";
-
   document.getElementById("taskPopup").style.display = "flex";
 }
 
-/* POPUP EDIT */
+/* EDIT TASK */
 function editTask(dateStr, index) {
   popupMode = "edit";
   editIndex = index;
-
   const t = tasks[dateStr][index];
-
   document.getElementById("popupTitle").innerText = "แก้ไขงาน";
-
   document.getElementById("p_title").value = t.title;
   document.getElementById("p_start").value = t.start;
   document.getElementById("p_end").value = t.end;
@@ -792,46 +767,53 @@ function editTask(dateStr, index) {
   document.getElementById("p_category").value = t.category;
   document.getElementById("p_detail").value = t.detail;
   document.getElementById("p_partner").value = t.partner;
-
   document.getElementById("taskPopup").style.display = "flex";
 }
 
-/* CLOSE POPUP */
 function closePopup() {
   document.getElementById("taskPopup").style.display = "none";
 }
 
-/* SAVE POPUP TASK */
-function savePopupTask() {
-  const title = document.getElementById("p_title").value;
-  const start = document.getElementById("p_start").value;
-  const end = document.getElementById("p_end").value;
+/* SAVE TASK */
+async function savePopupTask() {
+  const title    = document.getElementById("p_title").value.trim();
+  const start    = document.getElementById("p_start").value;
+  const end      = document.getElementById("p_end").value;
   const priority = document.getElementById("p_priority").value;
   const category = document.getElementById("p_category").value;
-  const detail = document.getElementById("p_detail").value;
-  const partner = document.getElementById("p_partner").value;
+  const detail   = document.getElementById("p_detail").value;
+  const partner  = document.getElementById("p_partner").value;
 
-  if (!tasks[selectedDate]) tasks[selectedDate] = [];
+  if (!title) { alert("กรุณาใส่ชื่องาน"); return; }
 
-  if (popupMode === "add") {
-    tasks[selectedDate].push({
-      title, start, end, priority, category, detail, partner,
-      done: false
-    });
-  } else {
-    const t = tasks[selectedDate][editIndex];
-    t.title = title;
-    t.start = start;
-    t.end = end;
-    t.priority = priority;
-    t.category = category;
-    t.detail = detail;
-    t.partner = partner;
+  try {
+    if (popupMode === "add") {
+      const rows = await sbFetch("POST", "tasks", {
+        date: selectedDate,
+        title, start_time: start, end_time: end,
+        priority, category, detail, partner, done: false
+      });
+      if (!tasks[selectedDate]) tasks[selectedDate] = [];
+      const newRow = rows[0];
+      tasks[selectedDate].push({
+        id: newRow.id, title, start, end, priority, category, detail, partner, done: false
+      });
+    } else {
+      const t = tasks[selectedDate][editIndex];
+      await sbFetch("PATCH", `tasks?id=eq.${t.id}`, {
+        title, start_time: start, end_time: end,
+        priority, category, detail, partner
+      });
+      Object.assign(t, { title, start, end, priority, category, detail, partner });
+    }
+  } catch(e) {
+    console.error("Save error:", e);
+    alert("บันทึกไม่สำเร็จ: " + e.message);
+    return;
   }
 
-  save();
-  loadCalendar();
   closePopup();
+  loadCalendar();
   openTaskList(selectedDate);
 }
 
@@ -839,4 +821,5 @@ loadCalendar();
 </script>
 
 </body>
+</html>
 </html>
