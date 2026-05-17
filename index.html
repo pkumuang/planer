@@ -100,144 +100,127 @@ body {
 
 /* ── iPad Portrait (768px - 1024px) ── */
 @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
-  .container { flex-direction: column; height: auto; min-height: 100vh; }
+  .container { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
 
-  .left-panel   { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 2px solid var(--border); height: auto; padding: 12px; }
-  .middle-panel { width: 100%; box-sizing: border-box; border-right: none; border-bottom: 2px solid var(--border); height: auto; }
-  .right-panel  { width: 100%; box-sizing: border-box; height: auto; }
+  .left-panel {
+    width: 100%; height: auto; overflow: visible;
+    border-right: none; border-bottom: 2px solid var(--border);
+    box-sizing: border-box; padding: 12px;
+  }
+  .left-panel > div:first-child { overflow: visible; }
+
+  .middle-panel {
+    width: 100%; height: auto; overflow: visible;
+    border-right: none; border-bottom: 2px solid var(--border);
+    box-sizing: border-box; display: block !important;
+  }
+  #taskList { overflow: visible; flex: unset; }
+
+  .right-panel { display: none !important; }
 
   .day { padding: 8px 2px; font-size: 13px; }
   .header-day { font-size: 11px; }
 }
 
-/* ── iPad Landscape (1024px+) ── */
+/* ── iPad Landscape ── */
 @media (min-width: 768px) and (max-width: 1366px) and (orientation: landscape) {
   .container {
-    display: grid;
-    grid-template-columns: 45% 55%;
-    grid-template-rows: auto 1fr;
-    height: 100vh;
-    overflow: hidden;
+    display: flex; flex-direction: row;
+    height: 100vh; overflow: hidden;
   }
 
-  /* Calendar — top-left */
+  /* Calendar — left */
   .left-panel {
-    grid-column: 1;
-    grid-row: 1;
-    width: 100%;
-    box-sizing: border-box;
-    border-right: none;
-    border-bottom: 2px solid var(--border);
-    height: auto;
-    overflow: visible;
-    padding: 12px;
-    flex-shrink: unset;
-  }
-
-  /* left-panel inner div ไม่ scroll บน iPad */
-  .left-panel > div:first-child {
-    overflow: visible;
-  }
-
-  /* Task List — bottom-left, fixed height + internal scroll */
-  .middle-panel {
-    grid-column: 1;
-    grid-row: 2;
-    width: 100%;
-    box-sizing: border-box;
+    width: 42%; height: 100vh;
+    overflow: hidden; padding: 12px;
     border-right: 2px solid var(--border);
-    border-bottom: none;
-    height: 100%;
+    box-sizing: border-box;
+    display: flex; flex-direction: column;
+  }
+  .left-panel > div:first-child { overflow-y: auto; flex: 1; min-height: 0; }
+
+  /* Task List — right (replaces right-panel role) */
+  .middle-panel {
+    flex: 1; height: 100vh;
     overflow: hidden;
-    flex-shrink: unset;
-    display: flex;
+    border-right: none;
+    box-sizing: border-box;
+    display: flex !important;
     flex-direction: column;
   }
 
-  /* Detail — right column, spans both rows, fixed + internal scroll */
-  .right-panel {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    width: 100%;
-    box-sizing: border-box;
-    height: 100vh;
-    overflow: hidden;
-    flex-shrink: unset;
-    display: flex;
-    flex-direction: column;
-  }
+  /* Hide original right-panel on iPad landscape */
+  .right-panel { display: none !important; }
 
-  /* Calendar fit */
-  .left-panel .grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  .left-panel .day {
-    padding: 6px 0;
-    font-size: 13px;
-    min-width: 0;
-    overflow: hidden;
-    box-sizing: border-box;
-  }
+  .left-panel .grid { gap: 2px; width: 100%; box-sizing: border-box; }
+  .left-panel .day { padding: 6px 0; font-size: 13px; min-width: 0; overflow: hidden; box-sizing: border-box; }
   .left-panel .header-day { font-size: 11px; padding: 2px 0; }
   .left-panel h2 { font-size: 15px; margin: 4px 0; }
   .left-panel h3 { font-size: 13px; margin: 2px 0; }
   .left-panel button { font-size: 13px; padding: 7px 4px; }
 }
 
-/* ── iPhone / small screen (767px and below) ── */
-@media (max-width: 767px) {
-  .container {
-    flex-direction: column;
-    height: auto;
-    min-height: 100vh;
-    overflow: visible;
-  }
+/* ── iPhone Portrait (max 767px) ── */
+@media (max-width: 767px) and (orientation: portrait) {
+  .container { flex-direction: column; height: auto; min-height: 100vh; overflow: visible; }
 
   .left-panel {
-    width: 100%;
-    box-sizing: border-box;
-    border-right: none;
-    border-bottom: 2px solid var(--border);
-    height: auto;
-    overflow-y: visible;
-    flex-shrink: 0;
+    width: 100%; height: auto; overflow: visible;
+    border-right: none; border-bottom: 2px solid var(--border);
+    box-sizing: border-box; padding: 12px;
   }
-
-  /* ซ่อน Dark Mode button ใน left-panel บน mobile ย้ายไปด้านล่างสุด */
-  .left-panel #themeToggle {
-    margin-top: 12px;
-  }
+  .left-panel > div:first-child { overflow: visible; }
 
   .middle-panel {
-    width: 100%;
-    box-sizing: border-box;
-    border-right: none;
-    border-bottom: 2px solid var(--border);
-    height: auto;
-    overflow-y: visible;
-    flex-shrink: 0;
+    width: 100%; height: auto; overflow: visible;
+    border-right: none; border-bottom: 2px solid var(--border);
+    box-sizing: border-box; display: block !important;
   }
+  #taskList { overflow: visible; flex: unset; }
 
-  .right-panel {
-    width: 100%;
-    box-sizing: border-box;
-    border-right: none;
-    height: auto;
-    overflow-y: visible;
-    flex-shrink: 0;
-  }
-
-  /* ซ่อน back button บน mobile แบบใหม่ (ไม่จำเป็นแล้ว) */
+  .right-panel { display: none !important; }
   .back-btn { display: none !important; }
 
   .day { padding: 8px 2px; font-size: 14px; }
   .header-day { font-size: 12px; }
   .grid { gap: 3px; }
   button { font-size: 15px; padding: 12px; }
+}
+
+/* ── iPhone Landscape ── */
+@media (max-width: 767px) and (orientation: landscape) {
+  .container {
+    display: flex; flex-direction: row;
+    height: 100vh; overflow: hidden;
+  }
+
+  .left-panel {
+    width: 45%; height: 100vh;
+    overflow: hidden; padding: 10px;
+    border-right: 2px solid var(--border);
+    box-sizing: border-box;
+    display: flex; flex-direction: column;
+  }
+  .left-panel > div:first-child { overflow-y: auto; flex: 1; min-height: 0; }
+
+  .middle-panel {
+    flex: 1; height: 100vh;
+    overflow: hidden;
+    border-right: none;
+    box-sizing: border-box;
+    display: flex !important;
+    flex-direction: column;
+  }
+
+  .right-panel { display: none !important; }
+  .back-btn { display: none !important; }
+
+  .left-panel .grid { gap: 2px; width: 100%; box-sizing: border-box; }
+  .left-panel .day { padding: 4px 0; font-size: 11px; min-width: 0; overflow: hidden; box-sizing: border-box; }
+  .left-panel .header-day { font-size: 9px; padding: 1px 0; }
+  .left-panel h2 { font-size: 13px; margin: 2px 0; }
+  .left-panel h3 { font-size: 11px; margin: 1px 0; }
+  .left-panel button { font-size: 11px; padding: 5px 3px; }
 }
 
 /* Calendar */
@@ -392,7 +375,27 @@ button {
 
 </div>
 
-<!-- POPUP FORM (Add / Edit Task) -->
+<!-- TASK DETAIL POPUP (mobile/tablet) -->
+<div id="taskDetailPopup" style="
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+">
+  <div class="popupBox" style="max-width: 520px; max-height: 80vh; overflow-y: auto; position: relative;">
+    <button onclick="closeTaskDetailPopup()" style="
+      position: absolute; top: 10px; right: 10px;
+      width: auto; padding: 6px 14px; margin: 0;
+      background: var(--border); border: none;
+      border-radius: 6px; cursor: pointer;
+      font-size: 14px; color: var(--text);
+    ">✕ ปิด</button>
+    <div id="taskDetailPopupContent"></div>
+  </div>
+</div>
 <div id="taskPopup">
   <div class="popupBox">
     <h2 id="popupTitle">เพิ่มงานใหม่</h2>
@@ -598,29 +601,17 @@ function openTaskList(dateStr) {
   document.getElementById("taskListDate").innerText = dateStr;
   renderTaskList();
 
-  // Mobile/iPad: scroll down to task list
-  if (window.innerWidth <= 767 || (window.innerWidth <= 1366 && window.matchMedia("(orientation: landscape) and (max-width: 1366px)").matches && window.innerWidth >= 768)) {
+  // Portrait mobile/tablet: scroll down to task list
+  if (window.matchMedia("(orientation: portrait)").matches && window.innerWidth <= 1024) {
     setTimeout(() => {
       document.getElementById("taskListPanel").scrollIntoView({ behavior: "smooth" });
     }, 50);
   }
 }
 
-/* MOBILE BACK NAVIGATION */
-function goBackToCalendar() {
-  document.querySelector(".left-panel").classList.remove("slide-out");
-  document.getElementById("taskListPanel").classList.remove("slide-in");
-  document.getElementById("taskListPanel").classList.add("slide-out");
-  setTimeout(() => {
-    document.getElementById("taskListPanel").classList.remove("slide-out");
-  }, 300);
-}
-
-function goBackToTaskList() {
-  document.getElementById("taskDetailPanel").classList.remove("slide-in");
-  document.getElementById("taskListPanel").classList.add("slide-in");
-  document.getElementById("taskListPanel").classList.remove("slide-out");
-}
+/* BACK NAVIGATION (unused on new layout, kept for safety) */
+function goBackToCalendar() {}
+function goBackToTaskList() {}
 
 /* SUMMARY BOX */
 function updateSummaryBox() {
@@ -731,27 +722,40 @@ function deleteOneTask() {
 }
 
 /* OPEN DETAIL */
+function isMobileOrTablet() {
+  return window.innerWidth <= 1366 && (
+    window.innerWidth <= 767 ||
+    window.matchMedia("(orientation: portrait)").matches ||
+    window.matchMedia("(orientation: landscape)").matches
+  ) && !/\bWindows\b|\bMacintosh\b/.test(navigator.userAgent);
+}
+
 function openTaskDetail(index) {
   selectedTaskIndex = index;
   const t = tasks[selectedDate][index];
 
-  document.getElementById("taskDetailPanel").style.display = "flex";
-
-  document.getElementById("taskDetail").innerHTML = `
-    <h3>${t.title}</h3>
+  const detailHTML = `
+    <h3 style="margin-top: 30px;">${t.title}</h3>
     <p><strong>เวลา:</strong> ${t.start} - ${t.end}</p>
-    <p><strong>Priority:</strong> ${t.priority}</p>
+    <p><strong>Priority:</strong> <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span></p>
     <p><strong>หมวดหมู่:</strong> ${t.category}</p>
     <p><strong>ทำงานร่วมกับ:</strong> ${t.partner}</p>
     <p><strong>รายละเอียด:</strong><br>${t.detail}</p>
   `;
 
-  // Mobile: scroll down to detail panel
-  if (window.innerWidth <= 767) {
-    setTimeout(() => {
-      document.getElementById("taskDetailPanel").scrollIntoView({ behavior: "smooth" });
-    }, 50);
+  // Mobile / Tablet → popup
+  if (window.innerWidth <= 1366 && !/Windows NT|Macintosh/.test(navigator.userAgent) || window.innerWidth <= 767) {
+    document.getElementById("taskDetailPopupContent").innerHTML = detailHTML;
+    document.getElementById("taskDetailPopup").style.display = "flex";
+  } else {
+    // Desktop → right panel
+    document.getElementById("taskDetailPanel").style.display = "flex";
+    document.getElementById("taskDetail").innerHTML = detailHTML;
   }
+}
+
+function closeTaskDetailPopup() {
+  document.getElementById("taskDetailPopup").style.display = "none";
 }
 
 /* POPUP ADD */
