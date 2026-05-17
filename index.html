@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Planner</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#222">
+
+<style>
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Light / Dark Mode */
+:root {
+  --bg: #ffffff;
+  --text: #000000;
+  --panel: #f5f5f5;
+  --border: #cccccc;
+}
+.dark {
+  --bg: #1e1e1e;
+  --text: #ffffff;
+  --panel: #2a2a2a;
+  --border: #555;
+}
+
+/* Layout */
+.container {
+  display: flex;
+  height: 100vh;
+}
+
+.left-panel {
+  width: 20%;
+  border-right: 2px solid var(--border);
+  padding: 15px;
+  background: var(--panel);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.middle-panel {
+  width: 30%;
+  border-right: 2px solid var(--border);
+  padding: 15px;
+  background: var(--panel);
+  overflow-y: auto;
+  display: none;
+}
+
+.right-panel {
+  width: 50%;
+  padding: 15px;
+  background: var(--panel);
+  overflow-y: auto;
+  display: none;
+}
+
+/* Calendar */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+.day {
+  padding: 10px;
+  border: 1px solid var(--border);
+  text-align: center;
+  cursor: pointer;
+}
+.day.has-task {
+  background: #e6f7ff;
+}
+.day.today {
+  border: 2px solid #4da3ff;
+  font-weight: bold;
+}
+.dark .day.today {
+  border: 2px solid #66b8ff;
+}
+.day.selected {
+  background: #4da3ff !important;
+  color: white;
+  border: 2px solid #1e6fd9;
+  font-weight: bold;
+}
+.dark .day.selected {
+  background: #005bbb !important;
+  border-color: #003f7f;
+}
+.header-day {
+  font-weight: bold;
+  text-align: center;
+  padding: 5px;
+}
+
+/* Task List */
+.task-item {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.task-item:hover {
+  background: #ddd;
+}
+
+.priority-high { color: red; font-weight: bold; }
+.priority-med { color: orange; font-weight: bold; }
+.priority-low { color: green; font-weight: bold; }
+
+/* Popup */
+#taskPopup, #confirmPopup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.popupBox {
+  width: 90%;
+  max-width: 500px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 20px;
+  border-radius: 10px;
+}
+input, textarea, select {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div>
+      <h2 id="title"></h2>
+      <h3 id="weekNumber"></h3>
+
+      <!-- Month Navigation -->
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <button onclick="prevMonth()" style="flex:1;">◀</button>
+        <button onclick="nextMonth()" style="flex:1;">▶</button>
+      </div>
+
+      <div id="calendarHeader" class="grid"></div>
+      <div id="calendar" class="grid"></div>
+    </div>
+
+    <button id="themeToggle"
+      onclick="toggleDarkMode()"
+      style="
+        margin-top: auto;
+        background: var(--border);
+        color: var(--text);
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+      ">
+      Dark Mode
+    </button>
+  </div>
+
+  <!-- MIDDLE PANEL -->
+  <div class="middle-panel" id="taskListPanel">
+    <h2 id="taskListDate"></h2>
+
+    <!-- รายละเอียดงานทั้งหมด -->
+    <div id="summaryBox" style="padding:10px; background:var(--bg); border:1px solid var(--border); margin-bottom:10px;">
+      <h3>รายละเอียดงานทั้งหมด</h3>
+      <div id="summaryContent"></div>
+    </div>
+
+    <button onclick="openAddTaskForm()">+ เพิ่มงานใหม่</button>
+
+    <div id="taskList"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel" id="taskDetailPanel">
+    <h2>รายละเอียดงาน</h2>
+    <div id="taskDetail"></div>
+  </div>
+
+</div>
+
+<!-- POPUP FORM (Add / Edit Task) -->
+<div id="taskPopup">
+  <div class="popupBox">
+    <h2 id="popupTitle">เพิ่มงานใหม่</h2>
+
+    <label>ชื่องาน</label>
+    <input id="p_title">
+
+    <label>เวลาเริ่ม</label>
+    <input id="p_start" placeholder="09:00">
+
+    <label>เวลาจบ</label>
+    <input id="p_end" placeholder="11:00">
+
+    <label>Priority</label>
+    <select id="p_priority">
+      <option>Low</option>
+      <option>Med</option>
+      <option>High</option>
+    </select>
+
+    <label>หมวดหมู่</label>
+    <input id="p_category">
+
+    <label>ทำงานร่วมกับ</label>
+    <input id="p_partner">
+
+    <label>รายละเอียดงาน</label>
+    <textarea id="p_detail"></textarea>
+
+    <button onclick="savePopupTask()">บันทึก</button>
+    <button onclick="closePopup()">ยกเลิก</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE POPUP -->
+<div id="confirmPopup">
+  <div class="popupBox">
+    <h2>ยืนยันการลบ</h2>
+    <p>คุณต้องการลบงานนี้หรือไม่?</p>
+
+    <button onclick="deleteOneTask()" style="background:red; color:white;">
+      ลบข้อมูล
+    </button>
+
+    <button onclick="cancelDeletePopup()">
+      ยกเลิก
+    </button>
+  </div>
+</div>
+
+<script>
+let tasks = JSON.parse(localStorage.getItem("tasks") || "{}");
+let selectedDate = null;
+let selectedTaskIndex = null;
+
+let popupMode = "add";
+let editIndex = null;
+
+let selectedForDelete = [];
+
+let currentYear = new Date().getFullYear();
+let currentMonth = new Date().getMonth();
+let selectedCalendarDay = null;
+
+/* DARK MODE */
+function toggleDarkMode() {
+  const body = document.body;
+  const btn = document.getElementById("themeToggle");
+
+  body.classList.toggle("dark");
+
+  const isDark = body.classList.contains("dark");
+  localStorage.setItem("darkMode", isDark);
+
+  btn.innerText = isDark ? "Light Mode" : "Dark Mode";
+}
+
+window.onload = () => {
+  const isDark = localStorage.getItem("darkMode") === "true";
+  const btn = document.getElementById("themeToggle");
+
+  if (isDark) {
+    document.body.classList.add("dark");
+    btn.innerText = "Light Mode";
+  } else {
+    btn.innerText = "Dark Mode";
+  }
+
+  // Auto-select today
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+  openTaskList(todayStr);
+};
+
+/* SAVE */
+function save() {
+  localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+/* WEEK NUMBER */
+function getWeekNumber(date) {
+  const temp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = temp.getUTCDay() || 7;
+  temp.setUTCDate(temp.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+  return Math.ceil((((temp - yearStart) / 86400000) + 1) / 7);
+}
+
+/* LOAD CALENDAR */
+function loadCalendar() {
+  const year = currentYear;
+  const month = currentMonth;
+
+  document.getElementById("title").innerText =
+    new Date(year, month).toLocaleString("th-TH", { month: "long", year: "numeric" });
+
+  document.getElementById("weekNumber").innerText =
+    "Week " + getWeekNumber(new Date(year, month, 1));
+
+  const header = document.getElementById("calendarHeader");
+  header.innerHTML = "";
+  const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+  days.forEach(d => {
+    const div = document.createElement("div");
+    div.className = "header-day";
+    div.innerText = d;
+    header.appendChild(div);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const cal = document.getElementById("calendar");
+  cal.innerHTML = "";
+
+  const offset = (firstDay + 6) % 7;
+  for (let i = 0; i < offset; i++) {
+    cal.appendChild(document.createElement("div"));
+  }
+
+  const todayObj = new Date();
+  const todayStr = `${todayObj.getFullYear()}-${todayObj.getMonth()+1}-${todayObj.getDate()}`;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${month+1}-${d}`;
+    const div = document.createElement("div");
+    div.className = "day";
+    if (tasks[dateStr]) div.classList.add("has-task");
+    if (dateStr === todayStr) div.classList.add("today");
+
+    div.innerText = d;
+    div.dataset.date = dateStr;
+    div.onclick = () => openTaskList(dateStr);
+
+    if (selectedDate === dateStr) {
+      div.classList.add("selected");
+      selectedCalendarDay = div;
+    }
+
+    cal.appendChild(div);
+  }
+}
+
+/* MONTH NAVIGATION */
+function prevMonth() {
+  currentMonth--;
+  if (currentMonth < 0) {
+    currentMonth = 11;
+    currentYear--;
+  }
+  loadCalendar();
+}
+
+function nextMonth() {
+  currentMonth++;
+  if (currentMonth > 11) {
+    currentMonth = 0;
+    currentYear++;
+  }
+  loadCalendar();
+}
+
+/* OPEN TASK LIST */
+function openTaskList(dateStr) {
+  selectedDate = dateStr;
+  selectedForDelete = [];
+
+  if (selectedCalendarDay) {
+    selectedCalendarDay.classList.remove("selected");
+  }
+
+  const days = document.querySelectorAll(".day");
+  days.forEach(d => {
+    if (d.dataset.date === dateStr) {
+      d.classList.add("selected");
+      selectedCalendarDay = d;
+    }
+  });
+
+  document.getElementById("taskListPanel").style.display = "block";
+  document.getElementById("taskDetailPanel").style.display = "none";
+
+  document.getElementById("taskListDate").innerText = dateStr;
+
+  updateSummaryBox();
+  renderTaskList();
+}
+
+/* SUMMARY BOX */
+function updateSummaryBox() {
+  const list = tasks[selectedDate] || [];
+  let html = "";
+
+  list.forEach((t, i) => {
+    html += `
+      <div>
+        <strong>${t.title}</strong> (${t.start}-${t.end})  
+        <span class="priority-${t.priority.toLowerCase()}">${t.priority}</span>
+      </div>
+    `;
+  });
+
+  document.getElementById("summaryContent").innerHTML = html || "ไม่มีงานในวันนี้";
+}
+
+/* RENDER TASK LIST */
+function renderTaskList() {
+  const list = document.getElementById("taskList");
+  list.innerHTML = "";
+
+  const tasksToday = tasks[selectedDate] || [];
+
+  tasksToday.forEach((t, i) => {
+    const div = document.createElement("div");
+    div.className = "task-item";
+    const isChecked = selectedForDelete.includes(i);
+
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <input type="checkbox" onchange="toggleSelect(${i}); event.stopPropagation();"
+          onclick="event.stopPropagation();"
+          ${isChecked ? "checked" : ""}
+          style="width:18px; height:18px; cursor:pointer; flex-shrink:0; margin:0;">
+
+        <strong>${t.title}</strong>
+        <span class="priority-${t.priority.toLowerCase()}">
+          (${t.priority})
+        </span>
+
+        <span style="margin-left:auto; color: var(--text); opacity:0.7; font-size:0.9em;">
+          ${t.start} - ${t.end}
+        </span>
+
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <button onclick="editTask('${selectedDate}', ${i}); event.stopPropagation();"
+            style="width:auto; padding:4px 10px; margin:0;">
+            แก้ไข
+          </button>
+          ${isChecked ? `
+          <button onclick="confirmDeleteOne(${i}); event.stopPropagation();"
+            style="width:auto; padding:4px 10px; margin:0; background:red; color:white; border:none; cursor:pointer; border-radius:4px;">
+            ลบ
+          </button>` : ""}
+        </div>
+      </div>
+      <div style="padding-left:26px; font-size:0.9em; opacity:0.8; margin-top:2px;">
+        👥 ${t.partner}
+      </div>
+    `;
+
+    div.onclick = () => openTaskDetail(i);
+    list.appendChild(div);
+  });
+}
+
+/* SELECT TASK FOR DELETE */
+function toggleSelect(index) {
+  if (selectedForDelete.includes(index)) {
+    selectedForDelete = selectedForDelete.filter(i => i !== index);
+  } else {
+    selectedForDelete.push(index);
+  }
+  renderTaskList();
+}
+
+/* CONFIRM DELETE ONE TASK */
+let deleteTargetIndex = null;
+
+function confirmDeleteOne(index) {
+  deleteTargetIndex = index;
+  document.getElementById("confirmPopup").style.display = "flex";
+}
+
+function cancelDeletePopup() {
+  deleteTargetIndex = null;
+  selectedForDelete = selectedForDelete.filter(i => i !== deleteTargetIndex);
+  selectedForDelete = [];
+  document.getElementById("confirmPopup").style.display = "none";
+  renderTaskList();
+}
+
+function deleteOneTask() {
+  if (deleteTargetIndex === null) return;
+
+  tasks[selectedDate].splice(deleteTargetIndex, 1);
+  if (tasks[selectedDate].length === 0) delete tasks[selectedDate];
+
+  selectedForDelete = selectedForDelete.filter(i => i !== deleteTargetIndex);
+  deleteTargetIndex = null;
+
+  save();
+  document.getElementById("confirmPopup").style.display = "none";
+  openTaskList(selectedDate);
+}
+
+/* OPEN DETAIL */
+function openTaskDetail(index) {
+  selectedTaskIndex = index;
+
+  const t = tasks[selectedDate][index];
+
+  document.getElementById("taskDetailPanel").style.display = "block";
+
+  document.getElementById("taskDetail").innerHTML = `
+    <h3>${t.title}</h3>
+    <p><strong>เวลา:</strong> ${t.start} - ${t.end}</p>
+    <p><strong>Priority:</strong> ${t.priority}</p>
+    <p><strong>หมวดหมู่:</strong> ${t.category}</p>
+    <p><strong>ทำงานร่วมกับ:</strong> ${t.partner}</p>
+    <p><strong>รายละเอียด:</strong><br>${t.detail}</p>
+  `;
+}
+
+/* POPUP ADD */
+function openAddTaskForm() {
+  popupMode = "add";
+  editIndex = null;
+
+  document.getElementById("popupTitle").innerText = "เพิ่มงานใหม่";
+
+  document.getElementById("p_title").value = "";
+  document.getElementById("p_start").value = "";
+  document.getElementById("p_end").value = "";
+  document.getElementById("p_priority").value = "Low";
+  document.getElementById("p_category").value = "";
+  document.getElementById("p_detail").value = "";
+  document.getElementById("p_partner").value = "";
+
+  document.getElementById("taskPopup").style.display = "flex";
+}
+
+/* POPUP EDIT */
+function editTask(dateStr, index) {
+  popupMode = "edit";
+  editIndex = index;
+
+  const t = tasks[dateStr][index];
+
+  document.getElementById("popupTitle").innerText = "แก้ไขงาน";
+
+  document.getElementById("p_title").value = t.title;
+  document.getElementById("p_start").value = t.start;
+  document.getElementById("p_end").value = t.end;
+  document.getElementById("p_priority").value = t.priority;
+  document.getElementById("p_category").value = t.category;
+  document.getElementById("p_detail").value = t.detail;
+  document.getElementById("p_partner").value = t.partner;
+
+  document.getElementById("taskPopup").style.display = "flex";
+}
+
+/* CLOSE POPUP */
+function closePopup() {
+  document.getElementById("taskPopup").style.display = "none";
+}
+
+/* SAVE POPUP TASK */
+function savePopupTask() {
+  const title = document.getElementById("p_title").value;
+  const start = document.getElementById("p_start").value;
+  const end = document.getElementById("p_end").value;
+  const priority = document.getElementById("p_priority").value;
+  const category = document.getElementById("p_category").value;
+  const detail = document.getElementById("p_detail").value;
+  const partner = document.getElementById("p_partner").value;
+
+  if (!tasks[selectedDate]) tasks[selectedDate] = [];
+
+  if (popupMode === "add") {
+    tasks[selectedDate].push({
+      title, start, end, priority, category, detail, partner,
+      done: false
+    });
+  } else {
+    const t = tasks[selectedDate][editIndex];
+    t.title = title;
+    t.start = start;
+    t.end = end;
+    t.priority = priority;
+    t.category = category;
+    t.detail = detail;
+    t.partner = partner;
+  }
+
+  save();
+  closePopup();
+  openTaskList(selectedDate);
+}
+
+loadCalendar();
+</script>
+
+</body>
+</html>
